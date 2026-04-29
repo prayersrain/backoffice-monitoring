@@ -35,9 +35,19 @@ export default function BarcodeScanner({ onScan, onClose, isOpen }: BarcodeScann
 
       scanner.render(
         (decodedText) => {
-          onScan(decodedText);
-          scanner.clear();
-          onClose();
+          // LOGIC: Terima IMEI (15 digit) ATAU QR Code iPhone (diawali 30S)
+          const isIMEI = /^\d{15}$/.test(decodedText);
+          const isIPhoneQR = decodedText.startsWith('30S') && decodedText.includes('1P');
+          
+          if (isIMEI || isIPhoneQR) {
+            onScan(decodedText);
+            scanner.clear();
+            onClose();
+          } else {
+            // Jika bukan IMEI, kita biarkan saja scanner mencari lagi 
+            // atau bisa kita tampilkan pesan log kecil
+            console.log('Detected non-IMEI code:', decodedText);
+          }
         },
         (errorMessage) => {
           // We don't want to show every frame error, 

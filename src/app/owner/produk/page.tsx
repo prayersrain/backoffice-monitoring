@@ -19,6 +19,7 @@ import { formatRupiah, maskIMEI } from '@/lib/utils';
 import type { Product } from '@/types';
 import BarcodeScanner from '@/components/ui/BarcodeScanner';
 import AddProductForm from '@/components/owner/AddProductForm';
+import { parseIPhoneQRCode, getSpecsByMPN } from '@/lib/constants/iphone-models';
 
 export default function OwnerProdukPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -27,7 +28,7 @@ export default function OwnerProdukPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'warehouse' | 'assigned' | 'sold'>('all');
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [scannedImei, setScannedImei] = useState('');
+  const [scannedData, setScannedData] = useState<{ imei?: string; model?: string; color?: string; storage?: string } | null>(null);
 
   const supabase = createClient();
 
@@ -58,14 +59,28 @@ export default function OwnerProdukPage() {
     setLoading(false);
   };
 
-  const handleScan = (imei: string) => {
-    setScannedImei(imei);
+  const handleScan = (decodedText: string) => {
+    // Jika teks panjang, kemungkinan QR Code Box iPhone
+    if (decodedText.length > 20) {
+      const parsed = parseIPhoneQRCode(decodedText);
+      const dictMatch = parsed.mpn ? getSpecsByMPN(parsed.mpn) : null;
+
+      setScannedData({
+        imei: parsed.imei || '',
+        model: dictMatch?.model || '',
+        color: dictMatch?.color || '',
+        storage: dictMatch?.storage || '',
+      });
+    } else {
+      // Jika pendek, asumsikan IMEI biasa dari barcode garis
+      setScannedData({ imei: decodedText });
+    }
     setIsAddModalOpen(true);
   };
 
   const handleAddSuccess = () => {
     fetchProducts();
-    setScannedImei('');
+    setScannedData(null);
   };
 
   const getStatusBadge = (status: string) => {
@@ -246,10 +261,10 @@ export default function OwnerProdukPage() {
       {/* Add Product Modal */}
       {isAddModalOpen && (
         <AddProductForm 
-          initialImei={scannedImei}
+          initialData={scannedData || {}}
           onClose={() => {
             setIsAddModalOpen(false);
-            setScannedImei('');
+            setScannedData(null);
           }}
           onSuccess={handleAddSuccess}
         />

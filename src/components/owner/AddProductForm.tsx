@@ -6,21 +6,26 @@ import { createClient } from '@/lib/supabase/client';
 import { formatRupiah } from '@/lib/utils';
 
 interface AddProductFormProps {
-  initialImei?: string;
+  initialData?: {
+    imei?: string;
+    model?: string;
+    color?: string;
+    storage?: string;
+  };
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export default function AddProductForm({ initialImei = '', onClose, onSuccess }: AddProductFormProps) {
+export default function AddProductForm({ initialData = {}, onClose, onSuccess }: AddProductFormProps) {
   const [loading, setLoading] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
-    imei: initialImei,
-    model: '',
-    color: '',
-    storage: '',
+    imei: initialData.imei || '',
+    model: initialData.model || '',
+    color: initialData.color || '',
+    storage: initialData.storage || '',
     purchase_price: '',
     selling_price: '',
     commission_amount: '200000',
