@@ -32,6 +32,7 @@ export default function AddProductForm({ initialData = {}, onClose, onSuccess }:
     model: initialData.model || '',
     color: initialData.color || '',
     storage: initialData.storage || '',
+    region: 'PA/A', // Default region iBox/Indonesia
     purchase_price: '',
     selling_price: '',
     commission_amount: '200000',
@@ -78,7 +79,7 @@ export default function AddProductForm({ initialData = {}, onClose, onSuccess }:
 
       const { error } = await supabase.from('products').insert({
         imei: formData.imei,
-        model: formData.model,
+        model: `${formData.model} (${formData.region})`,
         color: formData.color,
         storage: formData.storage,
         purchase_price: parseFloat(formData.purchase_price),
@@ -168,11 +169,14 @@ export default function AddProductForm({ initialData = {}, onClose, onSuccess }:
                         type="button"
                         className="w-full px-5 py-3 text-left hover:bg-indigo-600 transition-all border-b border-white/5 last:border-0 flex items-center justify-between group"
                         onClick={() => {
+                          // Normalisasi storage (hapus spasi agar cocok dengan dropdown)
+                          const cleanStorage = m.storage.replace(/\s/g, '');
+                          
                           setFormData({
                             ...formData,
                             model: m.model,
                             color: m.color,
-                            storage: m.storage
+                            storage: cleanStorage
                           });
                           setSearchTerm(m.mpn || '');
                           setShowSuggestions(false);
@@ -246,26 +250,40 @@ export default function AddProductForm({ initialData = {}, onClose, onSuccess }:
               </div>
             </div>
 
-            {/* Model */}
+            {/* Model & Region */}
             <div className="space-y-2">
               <label className="text-xs font-bold text-[var(--muted)] uppercase flex items-center gap-2">
-                <Smartphone size={14} /> Model iPhone
+                <Smartphone size={14} /> Model & Region
               </label>
-              <div className="relative">
-                <input 
-                  required
-                  placeholder="Scan UPC atau ketik model..."
-                  className="w-full pl-4 pr-12 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-indigo-500 outline-none transition-all"
-                  value={formData.model}
-                  onChange={e => setFormData({...formData, model: e.target.value})}
-                />
-                <button 
-                  type="button"
-                  onClick={() => setActiveScanner('model')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20"
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input 
+                    required
+                    placeholder="Nama Model..."
+                    className="w-full pl-4 pr-12 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-indigo-500 outline-none transition-all"
+                    value={formData.model}
+                    onChange={e => setFormData({...formData, model: e.target.value})}
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setActiveScanner('model')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20"
+                  >
+                    <Scan size={18} />
+                  </button>
+                </div>
+                <select 
+                  className="w-24 px-2 py-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 focus:border-indigo-500 outline-none transition-all text-xs font-bold"
+                  value={formData.region}
+                  onChange={e => setFormData({...formData, region: e.target.value})}
                 >
-                  <Scan size={18} />
-                </button>
+                  <option value="PA/A">PA/A</option>
+                  <option value="ID/A">ID/A</option>
+                  <option value="LL/A">LL/A</option>
+                  <option value="ZP/A">ZP/A</option>
+                  <option value="KH/A">KH/A</option>
+                  <option value="J/A">J/A</option>
+                </select>
               </div>
             </div>
 
@@ -295,6 +313,9 @@ export default function AddProductForm({ initialData = {}, onClose, onSuccess }:
                 onChange={e => setFormData({...formData, storage: e.target.value})}
               >
                 <option value="">Pilih Kapasitas</option>
+                <option value="16GB">16GB</option>
+                <option value="32GB">32GB</option>
+                <option value="64GB">64GB</option>
                 <option value="128GB">128GB</option>
                 <option value="256GB">256GB</option>
                 <option value="512GB">512GB</option>
