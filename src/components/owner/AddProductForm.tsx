@@ -5,7 +5,8 @@ import { Camera, X, Smartphone, Hash, Palette, HardDrive, DollarSign, Percent, L
 import { createClient } from '@/lib/supabase/client';
 import { formatRupiah } from '@/lib/utils';
 import BarcodeScanner from '@/components/ui/BarcodeScanner';
-import { getSpecsByScannedText } from '@/lib/constants/iphone-models';
+import { getSpecsByScannedText, ALL_IPHONE_MODELS } from '@/lib/constants/iphone-models';
+import { Search } from 'lucide-react';
 
 interface AddProductFormProps {
   initialData?: {
@@ -23,6 +24,8 @@ export default function AddProductForm({ initialData = {}, onClose, onSuccess }:
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [activeScanner, setActiveScanner] = useState<'imei' | 'model' | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
   
   const [formData, setFormData] = useState({
     imei: initialData.imei || '',
@@ -136,6 +139,63 @@ export default function AddProductForm({ initialData = {}, onClose, onSuccess }:
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {/* Quick Model Lookup (The new searchable dropdown) */}
+          <div className="space-y-2 relative">
+            <label className="text-xs font-bold text-indigo-400 uppercase tracking-widest flex items-center gap-2">
+              <Search size={14} /> Pencarian Cepat Kode Model (MPN)
+            </label>
+            <div className="relative group">
+              <input 
+                type="text"
+                placeholder="Ketik kode (contoh: MQ9T3, MPUF3...)"
+                className="w-full pl-4 pr-4 py-4 rounded-2xl bg-indigo-500/5 border border-indigo-500/20 focus:border-indigo-500 outline-none transition-all text-indigo-100 placeholder:text-indigo-500/40 font-mono"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value.toUpperCase());
+                  setShowSuggestions(true);
+                }}
+                onFocus={() => setShowSuggestions(true)}
+              />
+              
+              {showSuggestions && searchTerm.length >= 2 && (
+                <div className="absolute top-full left-0 right-0 mt-2 max-h-60 overflow-y-auto rounded-2xl bg-[#1a1c2e] border border-white/10 shadow-2xl z-[120] animate-fadeIn">
+                  {ALL_IPHONE_MODELS
+                    .filter(m => m.mpn?.includes(searchTerm))
+                    .slice(0, 10) // Limit suggestions for performance
+                    .map((m, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className="w-full px-5 py-3 text-left hover:bg-indigo-600 transition-all border-b border-white/5 last:border-0 flex items-center justify-between group"
+                        onClick={() => {
+                          setFormData({
+                            ...formData,
+                            model: m.model,
+                            color: m.color,
+                            storage: m.storage
+                          });
+                          setSearchTerm(m.mpn || '');
+                          setShowSuggestions(false);
+                        }}
+                      >
+                        <div className="flex flex-col">
+                          <span className="font-bold text-sm text-white group-hover:text-white">{m.mpn} - {m.model}</span>
+                          <span className="text-[10px] text-[var(--muted)] group-hover:text-indigo-100 uppercase font-bold">{m.color} | {m.storage}</span>
+                        </div>
+                        <div className="p-2 rounded-lg bg-white/5 text-[10px] font-bold">PILIH</div>
+                      </button>
+                    ))}
+                  {ALL_IPHONE_MODELS.filter(m => m.mpn?.includes(searchTerm)).length === 0 && (
+                    <div className="p-4 text-center text-xs text-[var(--muted)]">Kode tidak ditemukan</div>
+                  )}
+                </div>
+              )}
+            </div>
+            <p className="text-[10px] text-indigo-400/60 italic">Gunakan ini untuk mengisi data Model, Warna, & Kapasitas secara instan tanpa scan.</p>
+          </div>
+
+          <div className="h-px bg-white/5 w-full" />
+
           {/* Photo Upload Section */}
           <div className="flex flex-col items-center justify-center gap-4">
             <div 

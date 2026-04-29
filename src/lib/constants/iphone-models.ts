@@ -1,13 +1,25 @@
-/**
- * SUPER DICTIONARY iPHONE (V2.0 - APRIL 2026)
- * Mencakup iPhone 11, 12, 13, 14, 15, dan 16.
- */
+import iphoneData from './iphone.json';
 
 export interface iPhoneSpec {
   model: string;
   color: string;
   storage: string;
+  mpn?: string;
 }
+
+/**
+ * Memproses iphone.json menjadi daftar flat untuk pencarian dropdown
+ */
+export const ALL_IPHONE_MODELS: iPhoneSpec[] = iphoneData.flatMap(gen => 
+  gen.Models.flatMap(m => 
+    m.Model.map(mpn => ({
+      model: gen.Generation,
+      color: m.Color,
+      storage: m.Storage,
+      mpn: mpn
+    }))
+  )
+);
 
 export const IPHONE_DICTIONARY: Record<string, iPhoneSpec> = {
   // --- iPHONE 16 SERIES (NEWEST) ---
