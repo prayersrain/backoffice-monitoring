@@ -28,6 +28,7 @@ export default function BarcodeScanner({ onScan, onClose, isOpen }: BarcodeScann
             Html5QrcodeSupportedFormats.EAN_8,
             Html5QrcodeSupportedFormats.CODE_128,
             Html5QrcodeSupportedFormats.QR_CODE,
+            Html5QrcodeSupportedFormats.DATA_MATRIX,
           ],
         },
         /* verbose= */ false
@@ -35,18 +36,23 @@ export default function BarcodeScanner({ onScan, onClose, isOpen }: BarcodeScann
 
       scanner.render(
         (decodedText) => {
-          // LOGIC: Terima IMEI (15 digit) ATAU QR Code iPhone (diawali 30S)
+          // LOGIC: 
+          // 1. IMEI Murni (15 digit angka)
           const isIMEI = /^\d{15}$/.test(decodedText);
-          const isIPhoneQR = decodedText.startsWith('30S') && decodedText.includes('1P');
           
-          if (isIMEI || isIPhoneQR) {
+          // 2. Data Box iPhone (Biasanya mengandung 1P untuk Part Number DAN IMEI)
+          const hasMPN = decodedText.includes('1P');
+          const hasIMEI = decodedText.includes('IMEI') || /\d{15}/.test(decodedText);
+          const isIPhoneBox = (hasMPN && hasIMEI) || decodedText.startsWith('30S');
+          
+          if (isIMEI || isIPhoneBox) {
             onScan(decodedText);
             scanner.clear();
             onClose();
           } else {
             // Jika bukan IMEI, kita biarkan saja scanner mencari lagi 
             // atau bisa kita tampilkan pesan log kecil
-            console.log('Detected non-IMEI code:', decodedText);
+            console.log('Detected other code:', decodedText);
           }
         },
         (errorMessage) => {
