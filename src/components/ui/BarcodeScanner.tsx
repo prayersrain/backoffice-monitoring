@@ -36,11 +36,19 @@ export default function BarcodeScanner({ onScan, onClose, isOpen }: BarcodeScann
 
       scanner.render(
         (decodedText) => {
-          // LOGIC: 
-          // 1. IMEI Murni (15 digit angka)
+          // 1. Cek apakah ini Link Postel (Sertifikasi)
+          if (decodedText.includes('postel.go.id')) {
+            setError('Itu Barcode Sertifikasi (Postel). Cari kotak kecil yang titik-titiknya lebih padat di sebelahnya.');
+            return;
+          }
+
+          setError(null);
+
+          // 2. LOGIC: 
+          // IMEI Murni (15 digit angka)
           const isIMEI = /^\d{15}$/.test(decodedText);
           
-          // 2. Data Box iPhone (Biasanya mengandung 1P untuk Part Number DAN IMEI)
+          // Data Box iPhone (Biasanya mengandung 1P untuk Part Number DAN IMEI)
           const hasMPN = decodedText.includes('1P');
           const hasIMEI = decodedText.includes('IMEI') || /\d{15}/.test(decodedText);
           const isIPhoneBox = (hasMPN && hasIMEI) || decodedText.startsWith('30S');
@@ -50,8 +58,6 @@ export default function BarcodeScanner({ onScan, onClose, isOpen }: BarcodeScann
             scanner.clear();
             onClose();
           } else {
-            // Jika bukan IMEI, kita biarkan saja scanner mencari lagi 
-            // atau bisa kita tampilkan pesan log kecil
             console.log('Detected other code:', decodedText);
           }
         },

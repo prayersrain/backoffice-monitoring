@@ -1,9 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Camera, X, Smartphone, Hash, Palette, HardDrive, DollarSign, Percent, Loader2 } from 'lucide-react';
+import { Camera, X, Smartphone, Hash, Palette, HardDrive, DollarSign, Percent, Loader2, Scan } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { formatRupiah } from '@/lib/utils';
+import BarcodeScanner from '@/components/ui/BarcodeScanner';
+import { getSpecsByScannedText } from '@/lib/constants/iphone-models';
 
 interface AddProductFormProps {
   initialData?: {
@@ -20,6 +22,7 @@ export default function AddProductForm({ initialData = {}, onClose, onSuccess }:
   const [loading, setLoading] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+  const [activeScanner, setActiveScanner] = useState<'imei' | 'model' | null>(null);
   
   const [formData, setFormData] = useState({
     imei: initialData.imei || '',
@@ -94,8 +97,35 @@ export default function AddProductForm({ initialData = {}, onClose, onSuccess }:
     }
   };
 
+  const handleInternalScan = (text: string) => {
+    if (activeScanner === 'imei') {
+      // Jika yang di-scan adalah QR panjang, ambil IMEI-nya saja
+      const imeiMatch = text.match(/\d{15}/);
+      setFormData({ ...formData, imei: imeiMatch ? imeiMatch[0] : text });
+    } else if (activeScanner === 'model') {
+      const specs = getSpecsByScannedText(text);
+      if (specs) {
+        setFormData({
+          ...formData,
+          model: specs.model,
+          color: specs.color,
+          storage: specs.storage
+        });
+      } else {
+        alert('Model tidak dikenali di kamus. Silakan isi manual.');
+      }
+    }
+    setActiveScanner(null);
+  };
+
   return (
     <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md overflow-y-auto">
+      <BarcodeScanner 
+        isOpen={!!activeScanner}
+        onClose={() => setActiveScanner(null)}
+        onScan={handleInternalScan}
+      />
+
       <div className="glass-card w-full max-w-2xl my-auto animate-fadeInUp">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-white/5">
@@ -138,13 +168,22 @@ export default function AddProductForm({ initialData = {}, onClose, onSuccess }:
               <label className="text-xs font-bold text-[var(--muted)] uppercase flex items-center gap-2">
                 <Hash size={14} /> IMEI
               </label>
-              <input 
-                required
-                placeholder="Scan atau ketik IMEI..."
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-indigo-500 outline-none transition-all"
-                value={formData.imei}
-                onChange={e => setFormData({...formData, imei: e.target.value})}
-              />
+              <div className="relative">
+                <input 
+                  required
+                  placeholder="Scan atau ketik IMEI..."
+                  className="w-full pl-4 pr-12 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-indigo-500 outline-none transition-all"
+                  value={formData.imei}
+                  onChange={e => setFormData({...formData, imei: e.target.value})}
+                />
+                <button 
+                  type="button"
+                  onClick={() => setActiveScanner('imei')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20"
+                >
+                  <Scan size={18} />
+                </button>
+              </div>
             </div>
 
             {/* Model */}
@@ -152,13 +191,22 @@ export default function AddProductForm({ initialData = {}, onClose, onSuccess }:
               <label className="text-xs font-bold text-[var(--muted)] uppercase flex items-center gap-2">
                 <Smartphone size={14} /> Model iPhone
               </label>
-              <input 
-                required
-                placeholder="Contoh: iPhone 15 Pro Max"
-                className="w-full px-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-indigo-500 outline-none transition-all"
-                value={formData.model}
-                onChange={e => setFormData({...formData, model: e.target.value})}
-              />
+              <div className="relative">
+                <input 
+                  required
+                  placeholder="Scan UPC atau ketik model..."
+                  className="w-full pl-4 pr-12 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-indigo-500 outline-none transition-all"
+                  value={formData.model}
+                  onChange={e => setFormData({...formData, model: e.target.value})}
+                />
+                <button 
+                  type="button"
+                  onClick={() => setActiveScanner('model')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20"
+                >
+                  <Scan size={18} />
+                </button>
+              </div>
             </div>
 
             {/* Color */}

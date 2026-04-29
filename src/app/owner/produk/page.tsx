@@ -19,7 +19,7 @@ import { formatRupiah, maskIMEI } from '@/lib/utils';
 import type { Product } from '@/types';
 import BarcodeScanner from '@/components/ui/BarcodeScanner';
 import AddProductForm from '@/components/owner/AddProductForm';
-import { parseIPhoneQRCode, getSpecsByMPN } from '@/lib/constants/iphone-models';
+import { parseIPhoneQRCode, getSpecsByScannedText } from '@/lib/constants/iphone-models';
 
 export default function OwnerProdukPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -60,21 +60,15 @@ export default function OwnerProdukPage() {
   };
 
   const handleScan = (decodedText: string) => {
-    // Jika teks panjang, kemungkinan QR Code Box iPhone
-    if (decodedText.length > 20) {
-      const parsed = parseIPhoneQRCode(decodedText);
-      const dictMatch = parsed.mpn ? getSpecsByMPN(parsed.mpn) : null;
+    const specs = getSpecsByScannedText(decodedText);
+    const parsed = decodedText.length > 20 ? parseIPhoneQRCode(decodedText) : null;
 
-      setScannedData({
-        imei: parsed.imei || '',
-        model: dictMatch?.model || '',
-        color: dictMatch?.color || '',
-        storage: dictMatch?.storage || '',
-      });
-    } else {
-      // Jika pendek, asumsikan IMEI biasa dari barcode garis
-      setScannedData({ imei: decodedText });
-    }
+    setScannedData({
+      imei: parsed?.imei || (decodedText.length === 15 ? decodedText : ''),
+      model: specs?.model || '',
+      color: specs?.color || '',
+      storage: specs?.storage || '',
+    });
     setIsAddModalOpen(true);
   };
 
