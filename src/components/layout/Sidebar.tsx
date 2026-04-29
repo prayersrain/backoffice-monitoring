@@ -16,6 +16,8 @@ import {
   Bell,
 } from 'lucide-react';
 import { useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { useRouter } from 'next/navigation';
 
 interface SidebarProps {
   role: 'owner' | 'staff';
@@ -42,7 +44,18 @@ const staffNav = [
 
 export default function Sidebar({ role, userName, pendingRequests = 0 }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const supabase = createClient();
+
+  const handleLogout = async () => {
+    if (confirm('Apakah Anda yakin ingin keluar?')) {
+      await supabase.auth.signOut();
+      router.push('/login');
+      router.refresh();
+    }
+  };
+
   const navItems = role === 'owner' ? ownerNav : staffNav;
 
   const isActive = (href: string) => {
@@ -102,6 +115,7 @@ export default function Sidebar({ role, userName, pendingRequests = 0 }: Sidebar
             <p className="text-[11px] text-[var(--muted)] capitalize">{role}</p>
           </div>
           <button
+            onClick={handleLogout}
             className="p-1.5 rounded-lg hover:bg-[var(--surface-hover)] transition-colors text-[var(--muted)] hover:text-red-400"
             title="Keluar"
           >
